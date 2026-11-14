@@ -6,7 +6,12 @@ export async function middleware(request: NextRequest) {
   const platform = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "localhost:3000";
   const pathname = request.nextUrl.pathname;
 
-  if (host !== platform && !host.startsWith("localhost") && host.includes(".")) {
+  if (
+    host !== platform &&
+    !host.startsWith("localhost") &&
+    !host.startsWith("127.0.0.1") &&
+    host.includes(".")
+  ) {
     const slug = host.split(".")[0];
     if (slug && !pathname.startsWith("/s/")) {
       const url = request.nextUrl.clone();
@@ -15,15 +20,22 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/app") || pathname.startsWith("/brand")) {
-    return updateSession(request);
+  if (
+    pathname.startsWith("/app") ||
+    pathname.startsWith("/brand") ||
+    pathname === "/login" ||
+    pathname === "/signup"
+  ) {
+    try {
+      return await updateSession(request);
+    } catch {
+      return NextResponse.next({ request });
+    }
   }
 
-  return updateSession(request);
+  return NextResponse.next({ request });
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/app/:path*", "/brand/:path*", "/login", "/signup"],
 };
